@@ -29,7 +29,8 @@ namespace RespectMyBodySlide
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            var skipModNames = Implicits.Get(state.PatchMod.GameRelease).Listings
+            var implicits = Implicits.Get(state.PatchMod.GameRelease).Listings.ToHashSet();
+            var skipModNames = implicits
                 .Select(x => x.Name)
                 .Concat(Settings.IgnoredModNames.Select(f => Path.GetFileNameWithoutExtension(f)))
                 .Append(state.PatchMod.ModKey.Name)
@@ -41,7 +42,7 @@ namespace RespectMyBodySlide
                 Console.WriteLine($"Checking mod: {listing.ModKey.Name}");
                 foreach (var npc in listing.Mod!.Npcs.Where(x => !seenNpcs.Contains(x.FormKey)))
                 {
-                    PatchNpc(npc, state);
+                    PatchNpc(npc, implicits, state);
                     seenNpcs.Add(npc.FormKey);
                 }
             }
@@ -52,7 +53,8 @@ namespace RespectMyBodySlide
             return $"{npc.FormKey} ({npc.EditorID} - '{npc.Name}')";
         }
 
-        private static void PatchNpc(INpcGetter npc, IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
+        private static void PatchNpc(
+            INpcGetter npc, IReadOnlySet<ModKey> implicits, IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
             var race = npc.Race.Resolve(state.LinkCache);
             if (!race.Keywords?.Contains(ActorTypeNpcKeywordFormKey) ?? false)
@@ -60,6 +62,18 @@ namespace RespectMyBodySlide
 
             if (npc.WornArmor.IsNull)
                 return;
+
+            if (implicits.Contains(npc.FormKey.ModKey))
+            {
+                var masterNpc = npc.AsLink().ResolveAll(state.LinkCache).Last();
+                if (masterNpc.WornArmor == npc.WornArmor)
+                {
+                    Console.WriteLine(
+                        $"NPC {FormatNpc(npc)} uses the same worn armor as the vanilla master and will be skipped.");
+                    return;
+                }
+            }
+
 
             if (!Settings.KeepWigs)
             {
