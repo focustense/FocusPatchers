@@ -56,6 +56,13 @@ namespace RespectMyBodySlide
         private static void PatchNpc(
             INpcGetter npc, IReadOnlySet<ModKey> implicits, IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
+            if (npc.Race.IsNull)
+            {
+                // Shouldn't happen, but if it does, we can't verify whether or not the NPC is human, so just skip.
+                Console.WriteLine($"Skipping NPC {FormatNpc(npc)} with missing RACE property.");
+                return;
+            }
+
             var race = npc.Race.Resolve(state.LinkCache);
             if (!race.Keywords?.Contains(ActorTypeNpcKeywordFormKey) ?? false)
                 return;
