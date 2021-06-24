@@ -1,0 +1,8 @@
+{
+  "Nickname": "Respect My Body (Slide)",
+  "Visibility": "Visible",
+  "OneLineDescription": "Remove custom bodies from NPC mods, so that they all use the PC/default body.",
+  "LongDescription": "",
+  "PreferredAutoVersioning": "Default",
+  "RequiredMods": []
+}
